@@ -32,7 +32,7 @@ spec:
         - name: KAFKA_TOPICS
           value: "your-topic-name"
         - name: MAX_EVENTS_PER_TOPIC
-          value: "100"
+          value: "10"
         resources:
           requests:
             memory: "128Mi"

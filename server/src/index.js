@@ -93,6 +93,18 @@ const eventStore = new Map();
 
 // Standardize event structure
 function standardizeEvent(event) {
+  if (!event || typeof event !== 'object') {
+    throw new Error('Invalid event format');
+  }
+
+  if (!event.value || typeof event.value !== 'string') {
+    throw new Error('Event value must be a string');
+  }
+
+  if (!event.topic || typeof event.topic !== 'string') {
+    throw new Error('Event topic must be a string');
+  }
+
   return {
     value: event.value,
     timestamp: event.timestamp,
@@ -123,23 +135,33 @@ const kafkaManager = new KafkaManager({
 // Handle Kafka messages
 async function handleMessage(event) {
   try {
-    if (!eventStore.has(event.topic)) {
-      eventStore.set(event.topic, []);
+    const standardizedEvent = standardizeEvent(event);
+    
+    if (!eventStore.has(standardizedEvent.topic)) {
+      eventStore.set(standardizedEvent.topic, []);
     }
 
-    const events = eventStore.get(event.topic);
-    const standardizedEvent = standardizeEvent(event);
+    const events = eventStore.get(standardizedEvent.topic);
     events.unshift(standardizedEvent);
     
     const maxEvents = parseInt(process.env.MAX_EVENTS_PER_TOPIC) || 10;
     if (events.length > maxEvents) {
-      events.pop();
+      const removedEvent = events.pop();
+      logger.info(`Event removed due to max events limit for topic ${standardizedEvent.topic}:`, removedEvent);
     }
 
-    kafkaEventsConsumed.inc({ topic: event.topic });
-    logger.info(`Received event from topic ${event.topic}:`, standardizedEvent);
+    kafkaEventsConsumed.inc({ topic: standardizedEvent.topic });
+    logger.info(`Received event from topic ${standardizedEvent.topic}:`, standardizedEvent);
   } catch (error) {
-    logger.error(`Error handling message from topic ${event.topic}:`, error);
+    logger.error(`Error handling message from topic ${event.topic}:`, {
+      error: error.message,
+      event: {
+        topic: event.topic,
+        partition: event.partition,
+        offset: event.offset,
+        value: event.value?.toString()?.substring(0, 100) + '...' // Log first 100 chars of value
+      }
+    });
     kafkaErrorsTotal.inc({ topic: event.topic });
   }
 }
