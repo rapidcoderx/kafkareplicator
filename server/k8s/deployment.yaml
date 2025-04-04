@@ -29,8 +29,10 @@ spec:
               key: api-key
         - name: KAFKA_BROKER
           value: "kafka-service.namespace.svc.cluster.local:9092"
-        - name: KAFKA_TOPIC
+        - name: KAFKA_TOPICS
           value: "your-topic-name"
+        - name: MAX_EVENTS_PER_TOPIC
+          value: "100"
         resources:
           requests:
             memory: "128Mi"

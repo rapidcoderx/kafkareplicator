@@ -91,6 +91,17 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 // In-memory event storage
 const eventStore = new Map();
 
+// Standardize event structure
+function standardizeEvent(event) {
+  return {
+    value: event.value,
+    timestamp: event.timestamp,
+    topic: event.topic,
+    partition: event.partition,
+    offset: event.offset
+  };
+}
+
 // Middleware for API key authentication
 const apiKeyMiddleware = (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
@@ -117,13 +128,16 @@ async function handleMessage(event) {
     }
 
     const events = eventStore.get(event.topic);
-    events.unshift(event);
-    if (events.length > process.env.MAX_EVENTS_PER_TOPIC || 10) {
+    const standardizedEvent = standardizeEvent(event);
+    events.unshift(standardizedEvent);
+    
+    const maxEvents = parseInt(process.env.MAX_EVENTS_PER_TOPIC) || 10;
+    if (events.length > maxEvents) {
       events.pop();
     }
 
     kafkaEventsConsumed.inc({ topic: event.topic });
-    logger.info(`Received event from topic ${event.topic}:`, event);
+    logger.info(`Received event from topic ${event.topic}:`, standardizedEvent);
   } catch (error) {
     logger.error(`Error handling message from topic ${event.topic}:`, error);
     kafkaErrorsTotal.inc({ topic: event.topic });

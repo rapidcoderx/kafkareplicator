@@ -57,13 +57,26 @@ async function pollAndPushEvents() {
       for (const [topic, events] of Object.entries(eventsByTopic)) {
         if (events && events.length > 0) {
           try {
-            await producer.send({
-              topic,
-              messages: events.map(event => ({
-                value: event.value
-              }))
+            // Validate and sanitize events before sending
+            const validEvents = events.filter(event => {
+              try {
+                validateEvent(event);
+                return true;
+              } catch (error) {
+                logger.warn(`Invalid event skipped: ${error.message}`);
+                return false;
+              }
             });
-            logger.info(`Pushed ${events.length} events to local Kafka topic: ${topic}`);
+
+            if (validEvents.length > 0) {
+              await producer.send({
+                topic,
+                messages: validEvents.map(event => ({
+                  value: event.value
+                }))
+              });
+              logger.info(`Pushed ${validEvents.length} events to local Kafka topic: ${topic}`);
+            }
           } catch (error) {
             logger.error(`Error pushing events to local Kafka topic ${topic}:`, error);
           }
@@ -116,17 +129,33 @@ async function main() {
   try {
     await initKafkaProducer();
     
-    // Start polling using node-cron
-    const cronExpression = `*/${Math.floor(argv.interval / 1000)} * * * * *`;
-    cron.schedule(cronExpression, async () => {
+    // Start polling using setInterval
+    setInterval(async () => {
       await pollAndPushEvents();
-    });
+    }, argv.interval);
     
     logger.info(`Started polling server every ${argv.interval}ms`);
   } catch (error) {
     logger.error('Error in main function:', error);
     process.exit(1);
   }
+}
+
+// Add input validation for API inputs
+function validateEvent(event) {
+  if (!event || typeof event !== 'object') {
+    throw new Error('Invalid event format');
+  }
+  
+  if (!event.value || typeof event.value !== 'string') {
+    throw new Error('Event value must be a string');
+  }
+  
+  if (!event.topic || typeof event.topic !== 'string') {
+    throw new Error('Event topic must be a string');
+  }
+  
+  return true;
 }
 
 main().catch(error => {
