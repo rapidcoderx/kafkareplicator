@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: kafka-replicator-vs
+spec:
+  hosts:
+  - "kafka-replicator.your-domain.com"
+  gateways:
+  - kafka-replicator-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1
+    route:
+    - destination:
+        host: kafka-replicator-server
+        port:
+          number: 80
+    corsPolicy:
+      allowOrigins:
+      - exact: "https://your-domain.com"
+      allowMethods:
+      - GET
+      allowHeaders:
+      - x-api-key
+      - content-type
+    headers:
+      request:
+        set:
+          x-forwarded-proto: "https"
+      response:
+        set:
+          access-control-allow-origin: "https://your-domain.com" 

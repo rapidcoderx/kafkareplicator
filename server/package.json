@@ -1,0 +1,34 @@
+{
+  "name": "kafka-replicator-server",
+  "version": "1.0.0",
+  "description": "Kafka replicator server that reads from AWS Kafka and exposes events via REST API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "generate-api-key": "node src/utils/generateApiKey.js",
+    "check-updates": "ncu",
+    "update-deps": "ncu -u",
+    "docker-build": "docker build -t kafka-replicator-server .",
+    "docker-run": "docker run -p 3000:3000 --env-file .env kafka-replicator-server"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "kafkajs": "^2.2.4",
+    "prom-client": "^14.2.0",
+    "dotenv": "^16.3.1",
+    "swagger-ui-express": "^5.0.0",
+    "swagger-jsdoc": "^6.2.8",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.1.5",
+    "crypto": "^1.0.1",
+    "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1",
+    "express-async-handler": "^1.2.0",
+    "compression": "^1.7.4"
+  },
+  "devDependencies": {
+    "npm-check-updates": "^16.10.17"
+  }
+} 

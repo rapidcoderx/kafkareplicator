@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-replicator-server
+  labels:
+    app: kafka-replicator-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-replicator-server
+  template:
+    metadata:
+      labels:
+        app: kafka-replicator-server
+    spec:
+      containers:
+      - name: kafka-replicator-server
+        image: your-registry/kafka-replicator-server:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: kafka-replicator-secrets
+              key: api-key
+        - name: KAFKA_BROKER
+          value: "kafka-service.namespace.svc.cluster.local:9092"
+        - name: KAFKA_TOPIC
+          value: "your-topic-name"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-replicator-server
+spec:
+  selector:
+    app: kafka-replicator-server
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP 
